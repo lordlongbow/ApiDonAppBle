@@ -9,99 +9,153 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
-namespace ApiDonAppBle.Controllers;
-
-[ApiController]
-[Route("api/[controller]")]
-public class UsuarioController : ControllerBase
+namespace ApiDonAppBle.Controllers
 {
-    private readonly DataContext _contexto;
-    private readonly IConfiguration _config;
-
-    public UsuarioController(DataContext contexto, IConfiguration config)
+    [ApiController]
+    [Route("api/[controller]")]
+    public class UsuarioController : ControllerBase
     {
-        _contexto = contexto;
-        _config = config;
-    }
+        private readonly DataContext _contexto;
+        private readonly IConfiguration _config;
 
-    //registro
-    [HttpPost("Registrar")]
-    public Usuario Registro(Usuario User)
-    {
-        try
+        public UsuarioController(DataContext contexto, IConfiguration config)
         {
+            _contexto = contexto;
+            _config = config;
+        }
+
+        // Registro de usuario
+        [HttpPost("Registrar")]
+        public IActionResult Registro([FromBody] Usuario User)
+        {
+            try
+            {
+                var hashed = Convert.ToBase64String(
+                    KeyDerivation.Pbkdf2(
+                        password: User.Password,
+                        salt: Encoding.ASCII.GetBytes(_config["Salt"]),
+                        prf: KeyDerivationPrf.HMACSHA1,
+                        iterationCount: 1000,
+                        numBytesRequested: 256 / 8
+                    )
+                );
+                User.Password = hashed;
+                _contexto.Add(User);
+                _contexto.SaveChanges();
+                return Ok(User);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+
+        // Login de usuario
+        [HttpPost("login")]
+        public IActionResult Login([FromForm] LoginView lv)
+        {
+            var usuario = _contexto.Usuario.FirstOrDefault(u => u.Email == lv.Email);
+
+            if (usuario == null)
+            {
+                return BadRequest("Credenciales Incorrectas");
+            }
+
             var hashed = Convert.ToBase64String(
                 KeyDerivation.Pbkdf2(
-                    password: User.Password,
-                    salt: System.Text.Encoding.ASCII.GetBytes(_config["Salt"]),
+                    password: lv.Password,
+                    salt: Encoding.ASCII.GetBytes(_config["Salt"]),
                     prf: KeyDerivationPrf.HMACSHA1,
                     iterationCount: 1000,
                     numBytesRequested: 256 / 8
                 )
             );
-            User.Password = hashed;
-            _contexto.Add(User);
-            return User;
-        }
-        catch (System.Exception)
-        {
-            throw;
-        }
-    }
 
-    //login
+            if (usuario.Password != hashed)
+            {
+                return BadRequest("Credenciales incorrectas");
+            }
 
-    [HttpPost("login")]
-    public IActionResult Login(LoginView lv)
-    {
-        var Usuario = _contexto.Usuario.FirstOrDefault(u => u.Email == lv.Email);
-
-        if (Usuario == null)
-        {
-            return BadRequest("Credenciales Incorrectas");
+            var token = GenerarToken(usuario.Email);
+            return Ok(new { Token = token });
         }
 
-        var hashed = Convert.ToBase64String(
-            KeyDerivation.Pbkdf2(
-                password: lv.Password,
-                salt: System.Text.Encoding.ASCII.GetBytes(_config["Salt"]),
-                prf: KeyDerivationPrf.HMACSHA1,
-                iterationCount: 1000,
-                numBytesRequested: 256 / 8
-            )
-        );
-        if (Usuario.Password != hashed)
+        // Obtener perfil del usuario autenticado
+        [HttpGet("miPerfil")]
+        [Authorize]
+        public IActionResult MiPerfil()
         {
-            return BadRequest("Credenciales incorrectas");
+            try
+            {
+                var email = User.Identity.Name;
+                var usuario = _contexto.Usuario.FirstOrDefault(u => u.Email == email);
+
+                if (usuario == null)
+                {
+                    return NotFound();
+                }
+
+                return Ok(usuario);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
-        var token = GenerarToken(Usuario.Email);
-        return Ok(token);
-    }
-
-    //miperfil
-
-    //editarPerfil
-    //token
-    public string GenerarToken(string username)
-    {
-        var Usuario = _contexto.Usuario.FirstOrDefault(u => u.Email == username);
-        
-        var claims = new List<Claim>
+        // Edita el perfil del usuario autenticado
+        [HttpPut("EditarPerfil")]
+        [Authorize]
+        public IActionResult EditarPerfil([FromBody] Usuario usuarioEditar)
         {
-            new Claim(ClaimTypes.Name, Usuario.Email),
-            new Claim("FullName", Usuario.Nombre + " " + Usuario.Apellido)
-        };
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
-        var credenciales = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-        var token = new JwtSecurityToken(
-            issuer: _config["Jwt:Issuer"],
-            audience: _config["Jwt:Audience"],
-            claims: claims,
-            expires: DateTime.Now.AddMinutes(30000),
-            signingCredentials: credenciales
-        );
+            try
+            {
+                var email = User.Identity.Name;
+                var usuario = _contexto.Usuario.FirstOrDefault(u => u.Email == email);
 
-        return new JwtSecurityTokenHandler().WriteToken(token);
+                if (usuario == null)
+                {
+                    return NotFound();
+                }
+
+                usuario.Nombre = usuarioEditar.Nombre;
+                usuario.Apellido = usuarioEditar.Apellido;
+                usuario.Direccion = usuarioEditar.Direccion;
+
+                _contexto.Entry(usuario).State = EntityState.Modified;
+                _contexto.SaveChanges();
+
+                return Ok(usuario);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        // Esta funcion genera el token y retornar un token 
+        private string GenerarToken(string username)
+        {
+            var usuario = _contexto.Usuario.FirstOrDefault(u => u.Email == username);
+
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, usuario.Email),
+                new Claim("FullName", usuario.Nombre + " " + usuario.Apellido)
+            };
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
+            var credenciales = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var token = new JwtSecurityToken(
+                issuer: _config["Jwt:Issuer"],
+                audience: _config["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.Now.AddMinutes(30000),
+                signingCredentials: credenciales
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
     }
 }

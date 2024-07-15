@@ -15,12 +15,17 @@ namespace ApiDonAppBle.Models
         public DateTime Fecha {get;set;}
         [Required]
         public string FotoPublicacion {get;set;}
+        public string VideoPublicacion {get;set;}
         [Required]
         public bool Disponibilidad {get;set;}
         [ForeignKey("IdUsuario")]
         public int IdUsuario {get;set;}
+        public Usuario Usuario {get;set;}
         [ForeignKey("IdCategoria")]
         public int IdCategoria {get;set;}
+        public ICollection<Categoria> Categorias {get;set;}
+        public ICollection<Comentario> Comentarios {get;set;}
+
 
     }
 }

@@ -5,7 +5,7 @@ using ApiDonAppBle.Models;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
-
+//builder.WebHost.UseUrls("http://localhost:5156","http://*:5156", "https://*:5156");
 // Add services to the container.
 builder.Services.AddControllers();
 
@@ -43,6 +43,10 @@ if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
 }
+app.UseCors(x => x
+	.AllowAnyOrigin()
+	.AllowAnyMethod()
+	.AllowAnyHeader());
 
 app.UseHttpsRedirection();
 

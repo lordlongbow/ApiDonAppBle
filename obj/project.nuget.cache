@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "iuTj9bZh26HMyNRG+84xjYB9ZdBtvZWd/YxpBliUh1HWyTbzj1iUj+X9c/G+MzRqWdCk8P42md8+/29zM+OgMQ==",
+  "dgSpecHash": "/vPXd/ESf/9UWWTYA5f7T2lx4hmAbDVimOKVKmbFcUL/aNN/tdVyEtqhMzahkndGi9qWBffrFlsI5l4UDxZUTg==",
   "success": true,
   "projectFilePath": "C:\\Users\\POSITIVO BGH\\Documents\\GitHub\\ApiDonAppBle\\ApiDonAppBle.csproj",
   "expectedPackageFiles": [
@@ -34,6 +34,7 @@
     "C:\\Users\\POSITIVO BGH\\.nuget\\packages\\mono.texttemplating\\2.2.1\\mono.texttemplating.2.2.1.nupkg.sha512",
     "C:\\Users\\POSITIVO BGH\\.nuget\\packages\\mysqlconnector\\2.2.5\\mysqlconnector.2.2.5.nupkg.sha512",
     "C:\\Users\\POSITIVO BGH\\.nuget\\packages\\pomelo.entityframeworkcore.mysql\\7.0.0\\pomelo.entityframeworkcore.mysql.7.0.0.nupkg.sha512",
+    "C:\\Users\\POSITIVO BGH\\.nuget\\packages\\sixlabors.imagesharp\\3.1.4\\sixlabors.imagesharp.3.1.4.nupkg.sha512",
     "C:\\Users\\POSITIVO BGH\\.nuget\\packages\\swashbuckle.aspnetcore\\6.4.0\\swashbuckle.aspnetcore.6.4.0.nupkg.sha512",
     "C:\\Users\\POSITIVO BGH\\.nuget\\packages\\swashbuckle.aspnetcore.swagger\\6.4.0\\swashbuckle.aspnetcore.swagger.6.4.0.nupkg.sha512",
     "C:\\Users\\POSITIVO BGH\\.nuget\\packages\\swashbuckle.aspnetcore.swaggergen\\6.4.0\\swashbuckle.aspnetcore.swaggergen.6.4.0.nupkg.sha512",

@@ -48,3 +48,4 @@ C:\Users\POSITIVO BGH\Documents\GitHub\ApiDonAppBle\bin\Debug\net7.0\Microsoft.E
 C:\Users\POSITIVO BGH\Documents\GitHub\ApiDonAppBle\bin\Debug\net7.0\Microsoft.Extensions.DependencyModel.dll
 C:\Users\POSITIVO BGH\Documents\GitHub\ApiDonAppBle\bin\Debug\net7.0\Mono.TextTemplating.dll
 C:\Users\POSITIVO BGH\Documents\GitHub\ApiDonAppBle\bin\Debug\net7.0\System.CodeDom.dll
+C:\Users\POSITIVO BGH\Documents\GitHub\ApiDonAppBle\bin\Debug\net7.0\SixLabors.ImageSharp.dll

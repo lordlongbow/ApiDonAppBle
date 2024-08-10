@@ -17,11 +17,17 @@ namespace ApiDonAppBle.Controllers
     {
         private readonly DataContext _contexto;
         private readonly IConfiguration _config;
+        private readonly IWebHostEnvironment _environment;
 
-        public UsuarioController(DataContext contexto, IConfiguration config)
+        public UsuarioController(
+            DataContext contexto,
+            IConfiguration config,
+            IWebHostEnvironment environment
+        )
         {
             _contexto = contexto;
             _config = config;
+            _environment = environment;
         }
 
         // Registro de usuario
@@ -49,7 +55,6 @@ namespace ApiDonAppBle.Controllers
                 return BadRequest(ex.Message);
             }
         }
-
 
         // Login de usuario
         [HttpPost("login")]
@@ -134,7 +139,7 @@ namespace ApiDonAppBle.Controllers
             }
         }
 
-        // Esta funcion genera el token y retornar un token 
+        // Esta funcion genera el token y retornar un token
         private string GenerarToken(string username)
         {
             var usuario = _contexto.Usuario.FirstOrDefault(u => u.Email == username);
@@ -156,6 +161,48 @@ namespace ApiDonAppBle.Controllers
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        //Editar foto de Usuario
+        [HttpPut("actualizar/foto/{id}")]
+        [Authorize]
+        public async Task<IActionResult> ActualizarFotoPerfil(int id, [FromForm] IFormFile foto)
+        {
+            var usuarioLogueago = await _contexto.Usuario.FirstOrDefaultAsync(
+                u => u.Email == User.Identity.Name && u.IdUsuario == id
+            );
+
+            if (usuarioLogueago == null)
+            {
+                return BadRequest("Datos incorrectos");
+            }
+            if (foto == null)
+            {
+                return BadRequest("Datos incorrectos");
+            }
+
+            string wwwPath = _environment.WebRootPath;
+            string path = Path.Combine(wwwPath, "fotos", foto.FileName);
+
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+
+            string FileName =
+                "fotoperfil" + usuarioLogueago.IdUsuario + Path.GetExtension(foto.FileName);
+            string nombreFoto = Path.Combine(path, FileName);
+            usuarioLogueago.Avatar = Path.Combine("/fotos", nombreFoto);
+            _contexto.Usuario.Update(usuarioLogueago);
+            await _contexto.SaveChangesAsync();
+            return Ok(usuarioLogueago);
+        }
+
+        [HttpPost("cambiopassword")]
+        [Authorize]
+        public IActionResult cambiopassword([FromForm] Usuario usuarioLogueago)
+        {
+            return Ok();
         }
     }
 }

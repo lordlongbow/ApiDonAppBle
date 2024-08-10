@@ -3,6 +3,14 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ApiDonAppBle.Models
 {
+
+
+    public enum Estado 
+    {
+        Publica,
+        Privada
+    }
+
     public class Publicacion 
     {
         //id titulo fecha foto disponibilidad idUsuario
@@ -13,6 +21,7 @@ namespace ApiDonAppBle.Models
         public string Titulo {get;set;}
         [Required]
         public DateTime Fecha {get;set;}
+        public Estado Estado { get; set; } = Estado.Publica;
         [Required]
         public string FotoPublicacion {get;set;}
         public string VideoPublicacion {get;set;}
@@ -28,4 +37,5 @@ namespace ApiDonAppBle.Models
 
 
     }
+
 }

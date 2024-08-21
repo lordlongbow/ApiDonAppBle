@@ -10,6 +10,6 @@ public class DataContext : DbContext
     public DbSet<Usuario> Usuario {get;set;}
     public DbSet<Publicacion> Publicacion {get;set;}
     public DbSet<Comentario> Comentario {get;set;}
-    public DbSet<Categoria> Categoria {get;set;}
+    public DbSet<Etiqueta> Etiqueta {get;set;}
 
 }

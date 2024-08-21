@@ -30,9 +30,9 @@ namespace ApiDonAppBle.Models
         [ForeignKey("IdUsuario")]
         public int IdUsuario {get;set;}
         public Usuario Usuario {get;set;}
-        [ForeignKey("IdCategoria")]
-        public int IdCategoria {get;set;}
-        public ICollection<Categoria> Categorias {get;set;}
+        //[ForeignKey("IdCategoria")]
+        //public int IdCategoria {get;set;}
+        public Categoria Categoria {get;set;}
         public ICollection<Comentario> Comentarios {get;set;}
 
 

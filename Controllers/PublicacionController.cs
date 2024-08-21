@@ -102,6 +102,7 @@ namespace ApiDonAppBle.Controllers
             //cargar los datos que me vienen del formulario
             if (usuarioLogueado.Email == User.Identity.Name && User.Identity.IsAuthenticated)
             {
+
                 publicacion.IdUsuario = usuarioLogueado.IdUsuario;
                 publicacion.Fecha = DateTime.Today;
                 publicacion.Disponibilidad = true;

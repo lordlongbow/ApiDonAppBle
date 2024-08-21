@@ -3,11 +3,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ApiDonAppBle.Models
 {
-    public class Categoria 
+    public class Etiqueta 
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int IdCategoria {get;set;}
+        public int IdEtiqueta {get;set;}
        
         [Required]
         public string Descripcion {get;set;}

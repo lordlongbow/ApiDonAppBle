@@ -19,7 +19,7 @@ namespace ApiDonAppBle
         private readonly IConfiguration _config;
         private readonly IWebHostEnvironment _enviroment;
 
-        public CategoriaController(
+        public EtiquetaController(
             DataContext contexto,
             IConfiguration config,
             IWebHostEnvironment enviroment
@@ -33,7 +33,7 @@ namespace ApiDonAppBle
         //crear etiqueta
 
         [HttpPost]
-        public IActionResult CrearEtiqueta([FromBody] Categoria nuevaEtiqueta)
+        public IActionResult CrearEtiqueta([FromBody] Etiqueta nuevaEtiqueta)
         {
             
             try
@@ -50,39 +50,39 @@ namespace ApiDonAppBle
             }
         }
 
-        //eliminar categoria
+        //eliminar etiqueta
         [HttpDelete("{id}")]
-        public IActionResult EliminarCategoria(int id)
+        public IActionResult EliminarEtiqueta(int id)
         {
-            var categoria = _contexto.Categoria.SingleOrDefault(c => c.IdCategoria == id);
+            var categoria = _contexto.Etiqueta.SingleOrDefault(c => c.IdEtiqueta == id);
 
             if (categoria == null)
             {
-                return NotFound("Categoría no encontrada");
+                return NotFound("Etiqueta no encontrada");
             }
 
-            _contexto.Categoria.Remove(categoria);
+            _contexto.Etiqueta.Remove(categoria);
             _contexto.SaveChanges();
-            return Ok("Categoría eliminada");
+            return Ok("Etiqueta eliminada");
         }
 
-        //editar categoria
+        //editar etiqueta
         [HttpPut("{id}")]
-        public IActionResult EditarCategoria(int id, [FromBody] Categoria categoriaActualizada)
+        public IActionResult EditarEtiqueta(int id, [FromBody] Etiqueta EtiquetaActualizada)
         {
-            var categoria = _contexto.Categoria.SingleOrDefault(c => c.IdCategoria == id);
+            var etiqueta = _contexto.Etiqueta.SingleOrDefault(c => c.IdEtiqueta == id);
 
-            if (categoria == null)
+            if (etiqueta == null)
             {
                 return NotFound("Categoría no encontrada");
             }
 
-            categoria.Descripcion = categoriaActualizada.Descripcion;
+            etiqueta.Descripcion = EtiquetaActualizada.Descripcion;
 
-            _contexto.Categoria.Update(categoria);
+            _contexto.Etiqueta.Update(etiqueta);
             _contexto.SaveChanges();
 
-            return Ok(categoria);
+            return Ok(etiqueta);
         }
 
         //ver todas las categorias
@@ -90,29 +90,24 @@ namespace ApiDonAppBle
         [HttpGet]
         public IActionResult VerTodas()
         {
-            var categorias = _contexto.Categoria.ToList();
+            var etiquetas = _contexto.Etiqueta.ToList();
 
-            if (categorias != null)
+            if (etiquetas != null)
             {
-                return Ok(categorias);
+                return Ok(etiquetas);
             }
 
-            return NotFound("No se encontraron categorías");
+            return NotFound("No se encontraron etiquetas");
         }
 
-        [HttpGet("BuscarPorCategoria/{idCategoria}")]
+        [HttpGet("BuscarPorEtiqueta/{IdEtiqueta}")]
         [AllowAnonymous]
-        public IActionResult BuscarPorCategoria(int idCategoria)
+        public IActionResult BuscarPorEtiqueta(int IdEtiqueta)
         {
             var publicaciones = _contexto.Publicacion
-                .Where(p => p.IdCategoria == idCategoria && p.Estado == Estado.Publica)
+                .Where(p => p.IdEtiqueta == IdEtiqueta && p.Estado == Estado.Publica)
                 .ToList();
-
-            if (publicaciones.Any())
-            {
-                return Ok(publicaciones);
-            }
-
+            
             return NotFound("No se encontraron publicaciones para la categoría seleccionada.");
         }
     }

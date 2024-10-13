@@ -1,298 +1,215 @@
-using Microsoft.AspNetCore.Mvc;
-using ApiDonAppBle.Models;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Cryptography.KeyDerivation;
-using Microsoft.Extensions.Configuration;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using ApiDonAppBle.Models;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
-namespace ApiDonAppBle.Controllers
+namespace ApiDonAppBlea.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class PublicacionController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class PublicacionController : ControllerBase
+    private readonly DataContext _context;
+    private readonly IWebHostEnvironment _environment;
+
+    public PublicacionController(DataContext contexto, IWebHostEnvironment environment)
     {
-        private readonly DataContext _contexto;
-        private readonly IConfiguration _config;
-        private readonly IWebHostEnvironment _environment;
+        _context = contexto;
+        _environment = environment;
+    }
 
-        public PublicacionController(
-            DataContext contexto,
-            IConfiguration config,
-            IWebHostEnvironment environment
-        )
+    [HttpGet]
+    public ActionResult<IEnumerable<Publicacion>> GetPublicaciones()
+    {
+
+        var publicaciones = _context.Publicacion.ToList();
+
+        if (publicaciones.Count != 0)
         {
-            _contexto = contexto;
-            _config = config;
-            _environment = environment;
+            return Ok(publicaciones);
         }
-
-        //CRUD de las publicaciones
-
-        //ver publicaciones sin estar logueado
-
-        [HttpGet]
-        [AllowAnonymous]
-        public IActionResult VerTodas()
+        else
         {
-            var publicacionesPublicas = _contexto.Publicacion
-                .Where(p => p.Estado == Estado.Publica)
-                .ToList();
-
-            if (publicacionesPublicas.Any())
-            {
-                return Ok(publicacionesPublicas);
-            }
-
-            return NotFound("No se encontraron publicaciones públicas.");
+            return NotFound("Aun no cargas Publicacaiones");
         }
+    }
 
-        //ver Todas las publicaciones estando logueado
+    [HttpGet("{id}")]
+    public Publicacion DetallesPublicacion(int id)
+    {
 
-        [HttpGet]
-        [Authorize]
-        public IActionResult VerTodas([FromBody] Usuario usuarioLogueago)
+        var Publicacion = _context.Publicacion.Where(x => x.IdPublicacion == id).Include(x => x.IdUsuario).Include(x => x.IdComenatario).Include(x => x.IdEtiqueta).FirstOrDefault();
+
+        return Publicacion;
+    }
+
+
+
+    [HttpGet("MisPublicaciones")]
+    [Authorize]
+    public IActionResult misPublicaciones()
+    {
+
+        var usuario = _context.Usuario.Where(x => x.Email == User.Identity.Name).FirstOrDefault();
+
+        var misPublicaciones = _context.Publicacion.Where(x => x.IdUsuario == usuario.IdUsuario).ToList();
+        if (misPublicaciones.Count != 0)
         {
-            try
-            {
-                var usuario = _contexto.Usuario
-                    .Where(u => u.Email == User.Identity.Name)
-                    .FirstOrDefault();
-                if (usuario == null)
-                {
-                    return BadRequest("Debes Loguearte");
-                }
-                var publicaciones = _contexto.Publicacion.ToList();
-                return Ok(publicaciones);
-            }
-            catch (System.Exception)
-            {
-                throw;
-            }
+            return Ok(misPublicaciones);
         }
-
-        //ver detalle de publicacion
-
-        [HttpGet]
-        [Authorize]
-        public IActionResult DetallePublicacion(
-            [FromBody] Usuario usuarioLogueago,
-            int idpublicacion
-        )
+        else
         {
-            return Ok();
-        }
-
-        //agregar publicacion
-        [HttpPost]
-        [Authorize]
-        public IActionResult CargarPublicacion(
-            [FromForm] Publicacion publicacion,
-            [FromForm] IFormFile fotoPublicacion,
-            [FromForm] IFormFile videoPublicacion
-        )
-        {
-            //verificar que es el usuario logueado
-            var usuarioLogueado = _contexto.Usuario
-                .Where(u => u.Email == User.Identity.Name)
-                .FirstOrDefault();
-            //cargar los datos que me vienen del formulario
-            if (usuarioLogueado.Email == User.Identity.Name && User.Identity.IsAuthenticated)
-            {
-
-                publicacion.IdUsuario = usuarioLogueado.IdUsuario;
-                publicacion.Fecha = DateTime.Today;
-                publicacion.Disponibilidad = true;
-                if (publicacion.Estado != Estado.Publica)
-                {
-                    publicacion.Estado = Estado.Privada;
-                }
-
-                //ver si es foto o video
-
-                if (fotoPublicacion != null)
-                {
-                    string wwwPath = _environment.WebRootPath;
-                    string path = Path.Combine(wwwPath, "Uploads");
-                    if (!Directory.Exists(path))
-                    {
-                        Directory.CreateDirectory(path);
-                    }
-                    string fileName =
-                        "fotoPublicacion_"
-                        + usuarioLogueado.IdUsuario
-                        + Path.GetExtension(fotoPublicacion.FileName);
-                    string pathCompleto = Path.Combine(path, fileName);
-                    using (FileStream stream = new FileStream(pathCompleto, FileMode.Create))
-                    {
-                        fotoPublicacion.CopyTo(stream);
-                    }
-                    publicacion.FotoPublicacion = Path.Combine("/Uploads", fileName);
-                }
-
-                if (videoPublicacion != null)
-                {
-                    string wwwPath = _environment.WebRootPath;
-                    string path = Path.Combine(wwwPath, "Uploads");
-                    if (!Directory.Exists(path))
-                    {
-                        Directory.CreateDirectory(path);
-                    }
-                    string fileName =
-                        "videoPublicacion_"
-                        + usuarioLogueado.IdUsuario
-                        + Path.GetExtension(videoPublicacion.FileName);
-                    string pathCompleto = Path.Combine(path, fileName);
-                    using (FileStream stream = new FileStream(pathCompleto, FileMode.Create))
-                    {
-                        videoPublicacion.CopyTo(stream);
-                    }
-                    publicacion.VideoPublicacion = Path.Combine("/Uploads", fileName);
-                }
-
-                //guardar la publicaicon
-                _contexto.Publicacion.Add(publicacion);
-                _contexto.SaveChanges();
-                return Ok(publicacion);
-            }
-
-            return BadRequest();
-        }
-
-        //Editar una publicaciones
-
-        [HttpPut("actualizarPublicacion/{id}")]
-        [Authorize]
-        public IActionResult ActualizarPublicacion(int id, [FromBody] Publicacion publicacion)
-        {
-            // Verificar el usuario
-            var usuarioLogueado = _contexto.Usuario.SingleOrDefault(
-                u => u.Email == User.Identity.Name
-            );
-
-            if (usuarioLogueado == null || !User.Identity.IsAuthenticated)
-            {
-                return Unauthorized("Usuario no autorizado.");
-            }
-
-            // Buscar la publicación
-            var publicacionDb = _contexto.Publicacion.SingleOrDefault(p => p.IdPublicacion == id);
-
-            if (publicacionDb == null)
-            {
-                return NotFound("Publicación no encontrada.");
-            }
-
-            if (publicacionDb.IdUsuario != usuarioLogueado.IdUsuario)
-            {
-                return Forbid("No tiene permiso para actualizar esta publicación.");
-            }
-
-            // Actualizar los datos
-            publicacionDb.Titulo = publicacion.Titulo;
-            publicacionDb.Fecha = DateTime.Now;
-
-            if (!string.IsNullOrEmpty(publicacion.FotoPublicacion))
-            {
-                publicacionDb.FotoPublicacion = publicacion.FotoPublicacion;
-            }
-
-            if (!string.IsNullOrEmpty(publicacion.VideoPublicacion))
-            {
-                publicacionDb.VideoPublicacion = publicacion.VideoPublicacion;
-            }
-
-            // Guardar los cambios
-            _contexto.Publicacion.Update(publicacionDb);
-            _contexto.SaveChanges();
-
-            // Retornar el resultado
-            return Ok(publicacionDb);
-        }
-
-        //borrar una publicacion
-        [HttpDelete("EliminarPubliacion")]
-        [Authorize]
-        public IActionResult BorrarPublicacion(int id)
-        {
-            //controlar que sea el usuario correcto
-            var usuarioLogueado = _contexto.Usuario
-                .Where(u => u.Email == User.Identity.Name)
-                .FirstOrDefault();
-
-            if (usuarioLogueado == null || !User.Identity.IsAuthenticated)
-            {
-                return BadRequest("No tienes credenciales para realizar esta accion");
-            }
-
-            //buscar si existe la publicacion
-
-            var publicacionDb = _contexto.Publicacion.SingleOrDefault(
-                p =>
-                    p.IdPublicacion == id
-                    && User.Identity.Name == usuarioLogueado.Email
-                    && User.Identity.IsAuthenticated
-            );
-
-            if (publicacionDb == null)
-            {
-                return BadRequest("Publicacion No existente");
-            }
-
-            //eliminar la publicaicion y retornar
-
-            _contexto.Publicacion.Remove(publicacionDb);
-            _contexto.SaveChanges();
-
-            return Ok();
-        }
-
-        //ver MIS publicaciones
-
-        [HttpGet]
-        [Authorize("MisPublicaciones")]
-        public IActionResult MisPublicaciones([FromBody] Usuario usuarioLogueado)
-        {
-            var usuario = _contexto.Usuario.SingleOrDefault(
-                u => u.Email == User.Identity.Name && User.Identity.IsAuthenticated
-            );
-
-            if (usuario == null)
-            {
-                return Unauthorized("Debes Loguearte");
-            }
-            var misPublicaciones = _contexto.Publicacion
-                .Where(p => p.IdUsuario == usuario.IdUsuario)
-                .ToList();
-
-            if (misPublicaciones.Count > 0)
-            {
-                return Ok(misPublicaciones);
-            }
             return NotFound("Aun no cargas Publicacaiones");
         }
 
-        [HttpPut("CambiarDisponibilidad/{id}")]
-        [Authorize]
-        public IActionResult CambiarDisponibilidad(int id)
-        {
-            var publicacionACambiar = _contexto.Publicacion.SingleOrDefault(
-                publicacion => publicacion.IdPublicacion == id
-            );
+    }
 
-            if (publicacionACambiar == null)
+
+
+
+    [HttpPost("cargarPublicacion")]
+    [Authorize]
+    public async Task<IActionResult> CargarPublicacion([FromForm] Publicacion publicacion)
+    {
+        // Obtén el usuario autenticado
+        var usuarioLogueado = _context.Usuario.FirstOrDefault(x => x.Email == User.Identity.Name);
+
+        if (usuarioLogueado == null)
+        {
+            return Unauthorized("Usuario no autorizado.");
+        }
+
+        try
+        {
+            // Cargar los datos del formulario
+            publicacion.IdUsuario = usuarioLogueado.IdUsuario;
+            publicacion.Fecha = DateTime.Today;
+            publicacion.Disponibilidad = true;
+            publicacion.Comentarios ??= new List<Comentario>();
+            publicacion.Estado = publicacion.Estado != Estado.Publica ? Estado.Privada : publicacion.Estado;
+            publicacion.Etiquetas ??= new List<Etiqueta>();
+
+            // Procesar foto
+            if (publicacion.FotoPublicacionIFormFile != null)
             {
-                return NotFound("Publicación no encontrada.");
+                string wwwPath = _environment.WebRootPath;
+                string path = Path.Combine(wwwPath, "Uploads");
+                Console.WriteLine(path);
+
+                try
+                {
+                    if (!Directory.Exists(path))
+                    {
+                        Directory.CreateDirectory(path);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return BadRequest(new { messagess = $"Error al crear la carpeta: {ex.Message}" });
+                }
+
+                string fileName = $"fotoPublicacion_{Guid.NewGuid().ToString("N")}{usuarioLogueado.IdUsuario}{Path.GetExtension(publicacion.FotoPublicacionIFormFile.FileName)}";
+                string pathCompleto = Path.Combine(path, fileName);
+
+                using (var stream = new FileStream(pathCompleto, FileMode.Create))
+                {
+                    await publicacion.FotoPublicacionIFormFile.CopyToAsync(stream);
+                }
+
+                publicacion.FotoPublicacion = Path.Combine("/Uploads", fileName);
+            }
+            else
+            {
+                publicacion.FotoPublicacion = null;
             }
 
-            publicacionACambiar.Disponibilidad = !publicacionACambiar.Disponibilidad;
+            // Guardar la publicación
+            await _context.Publicacion.AddAsync(publicacion);
+            await _context.SaveChangesAsync();
 
-            _contexto.SaveChanges();
-
-            return Ok(publicacionACambiar);
+            return Ok(publicacion);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { messagerr = ex.Message });
         }
     }
+
+
+    [HttpPut("editarPublicacion/{id}")]
+    [Authorize]
+    public async Task<IActionResult> EditarPublicacion(int id, [FromForm] Publicacion publicacion)
+    {
+        var publicacionEncontrada = await _context.Publicacion
+            .FirstOrDefaultAsync(p => p.IdPublicacion == id);
+
+        if (publicacionEncontrada == null)
+        {
+            return NotFound("Publicacion no encontrada");
+        }
+
+        if (publicacion.Titulo == null)
+        {
+            publicacionEncontrada.Titulo = publicacionEncontrada.Titulo;
+        }
+        else
+        {
+            publicacionEncontrada.Titulo = publicacion.Titulo;
+        }
+        if (publicacion.FotoPublicacionIFormFile != null)
+        {
+            string wwwPath = _environment.WebRootPath;
+            string path = Path.Combine(wwwPath, "Uploads");
+            Console.WriteLine(path);
+        }
+        else
+        {
+            publicacionEncontrada.FotoPublicacion = publicacion.FotoPublicacion;
+        }
+        if (publicacion.Disponibilidad == null)
+        {
+            publicacionEncontrada.Disponibilidad = publicacion.Disponibilidad;
+        }
+        else
+        {
+            publicacionEncontrada.Disponibilidad = publicacionEncontrada.Disponibilidad;
+        }
+
+
+        _context.Publicacion.Update(publicacionEncontrada);
+        await _context.SaveChangesAsync();
+
+        return Ok(publicacionEncontrada);
+    }
+
+    [HttpPut("cambioEstadoPublicacion/{id}")]
+    [Authorize]
+    public async Task<IActionResult> CambioEstadoPublicacion(int id)
+    {
+
+
+        var usuario = _context.Usuario.FirstOrDefault(x => x.Email == User.Identity.Name);
+        var publicacionEncontrada = await _context.Publicacion
+            .FirstOrDefaultAsync(p => p.IdPublicacion == id);
+
+        if (publicacionEncontrada == null)
+        {
+            return NotFound("Publicacion no encontrada");
+        }
+
+        if (usuario == null || publicacionEncontrada.IdUsuario != usuario.IdUsuario)
+        {
+            return Forbid("No tienes permisos para cambiar el estado de esta publicación.");
+        }
+
+        publicacionEncontrada.Estado = publicacionEncontrada.Estado == Estado.Publica ? Estado.Privada : Estado.Publica;
+        _context.Publicacion.Update(publicacionEncontrada);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { estado = publicacionEncontrada.Estado });
+
+    }
+
+
 }

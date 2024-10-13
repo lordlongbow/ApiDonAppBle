@@ -17,6 +17,7 @@ namespace ApiDonAppBle.Models
        
         [ForeignKey("IdPublicacion")]
         public int IdPublicacion {get;set;}
+        public Publicacion Publicacion {get;set;}
 
         [ForeignKey("IdUsuario")]
         public int IdUsuario {get;set;}

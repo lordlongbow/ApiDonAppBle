@@ -18,5 +18,6 @@ namespace ApiDonAppBle.Models
         public string Password {get;set;}
         public string? Direccion {get;set;}
         public string? Avatar {get;set;}
+      //  public ICollection<Publicacion>? Publicaciones {get;set;}
     }
 }

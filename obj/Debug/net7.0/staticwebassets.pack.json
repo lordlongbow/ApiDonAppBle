@@ -1,0 +1,41 @@
+{
+  "Files": [
+    {
+      "Id": "C:\\Users\\pc\\OneDrive\\Documentos\\GitHub\\ApiDonAppBle\\wwwroot\\Uploads\\fotoPublicacion_000000000000000000000000000000001.png",
+      "PackagePath": "staticwebassets\\Uploads\\fotoPublicacion_000000000000000000000000000000001.png"
+    },
+    {
+      "Id": "C:\\Users\\pc\\OneDrive\\Documentos\\GitHub\\ApiDonAppBle\\wwwroot\\Uploads\\fotoPublicacion_1.png",
+      "PackagePath": "staticwebassets\\Uploads\\fotoPublicacion_1.png"
+    },
+    {
+      "Id": "C:\\Users\\pc\\OneDrive\\Documentos\\GitHub\\ApiDonAppBle\\wwwroot\\Uploads\\fotoPublicacion_bd0593f0b35c4df192680938e823ea371.png",
+      "PackagePath": "staticwebassets\\Uploads\\fotoPublicacion_bd0593f0b35c4df192680938e823ea371.png"
+    },
+    {
+      "Id": "C:\\Users\\pc\\OneDrive\\Documentos\\GitHub\\ApiDonAppBle\\wwwroot\\Uploads\\fotoPublicacion_d1889c30bfd447a8ba8eeb44585b914c1.png",
+      "PackagePath": "staticwebassets\\Uploads\\fotoPublicacion_d1889c30bfd447a8ba8eeb44585b914c1.png"
+    },
+    {
+      "Id": "C:\\Users\\pc\\OneDrive\\Documentos\\GitHub\\ApiDonAppBle\\wwwroot\\Uploads\\fotoPublicacion_fbf531650007486d92cde4090b7bb3741.png",
+      "PackagePath": "staticwebassets\\Uploads\\fotoPublicacion_fbf531650007486d92cde4090b7bb3741.png"
+    },
+    {
+      "Id": "obj\\Debug\\net7.0\\staticwebassets\\msbuild.ApiDonAppBle.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Debug\\net7.0\\staticwebassets\\msbuild.build.ApiDonAppBle.props",
+      "PackagePath": "build\\ApiDonAppBle.props"
+    },
+    {
+      "Id": "obj\\Debug\\net7.0\\staticwebassets\\msbuild.buildMultiTargeting.ApiDonAppBle.props",
+      "PackagePath": "buildMultiTargeting\\ApiDonAppBle.props"
+    },
+    {
+      "Id": "obj\\Debug\\net7.0\\staticwebassets\\msbuild.buildTransitive.ApiDonAppBle.props",
+      "PackagePath": "buildTransitive\\ApiDonAppBle.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

@@ -1,25 +1,32 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\POSITIVO BGH\\Documents\\GitHub\\ApiDonAppBle\\ApiDonAppBle.csproj": {}
+    "C:\\Users\\pc\\OneDrive\\Documentos\\GitHub\\ApiDonAppBle\\ApiDonAppBle.csproj": {}
   },
   "projects": {
-    "C:\\Users\\POSITIVO BGH\\Documents\\GitHub\\ApiDonAppBle\\ApiDonAppBle.csproj": {
+    "C:\\Users\\pc\\OneDrive\\Documentos\\GitHub\\ApiDonAppBle\\ApiDonAppBle.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\POSITIVO BGH\\Documents\\GitHub\\ApiDonAppBle\\ApiDonAppBle.csproj",
+        "projectUniqueName": "C:\\Users\\pc\\OneDrive\\Documentos\\GitHub\\ApiDonAppBle\\ApiDonAppBle.csproj",
         "projectName": "ApiDonAppBle",
-        "projectPath": "C:\\Users\\POSITIVO BGH\\Documents\\GitHub\\ApiDonAppBle\\ApiDonAppBle.csproj",
-        "packagesPath": "C:\\Users\\POSITIVO BGH\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\POSITIVO BGH\\Documents\\GitHub\\ApiDonAppBle\\obj\\",
+        "projectPath": "C:\\Users\\pc\\OneDrive\\Documentos\\GitHub\\ApiDonAppBle\\ApiDonAppBle.csproj",
+        "packagesPath": "C:\\Users\\pc\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\pc\\OneDrive\\Documentos\\GitHub\\ApiDonAppBle\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "C:\\Users\\POSITIVO BGH\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\pc\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net7.0"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -32,6 +39,11 @@
           "warnAsError": [
             "NU1605"
           ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
         }
       },
       "frameworks": {
@@ -66,7 +78,7 @@
             },
             "Swashbuckle.AspNetCore": {
               "target": "Package",
-              "version": "[6.4.0, )"
+              "version": "[6.8.1, )"
             }
           },
           "imports": [
@@ -80,6 +92,24 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[7.0.20, 7.0.20]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Host.win-x64",
+              "version": "[7.0.20, 7.0.20]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[7.0.20, 7.0.20]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[7.0.20, 7.0.20]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.AspNetCore.App": {
               "privateAssets": "none"
@@ -88,7 +118,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.202\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.401\\RuntimeIdentifierGraph.json"
         }
       }
     }

@@ -5,9 +5,10 @@ using ApiDonAppBle.Models;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
-//builder.WebHost.UseUrls("http://localhost:5156","http://*:5156", "https://*:5156");
-// Add services to the container.
+
+
 builder.Services.AddControllers();
+
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 var serverVersion = new MySqlServerVersion(new Version(8, 0, 21));
@@ -15,6 +16,7 @@ var serverVersion = new MySqlServerVersion(new Version(8, 0, 21));
 builder.Services.AddDbContext<DataContext>(options =>
     options.UseMySql(connectionString, serverVersion));
 
+// Configurar autenticación JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -30,25 +32,40 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddAuthorization(options => 
+// Configurar autorización
+builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
-}
-);
+});
+
+// Agregar servicios de Swagger
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "API DonAppBle", Version = "v1" });
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configurar el middleware de la aplicación.
 if (app.Environment.IsDevelopment())
 {
-    app.UseDeveloperExceptionPage();
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "API DonAppBle V1");
+        c.RoutePrefix = string.Empty; // Esto hace que Swagger UI esté disponible en la raíz
+    });
 }
+
 app.UseCors(x => x
-	.AllowAnyOrigin()
-	.AllowAnyMethod()
-	.AllowAnyHeader());
+    .AllowAnyOrigin()
+    .AllowAnyMethod()
+    .AllowAnyHeader());
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
+
+app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();

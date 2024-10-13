@@ -96,9 +96,13 @@ namespace ApiDonAppBle.Controllers
                 var email = User.Identity.Name;
                 var usuario = _contexto.Usuario.FirstOrDefault(u => u.Email == email);
 
+                if (!User.Identity.IsAuthenticated)
+                {
+                    return Unauthorized("Usted no tiene permisos para ingresar aqui");
+                }
                 if (usuario == null)
                 {
-                    return NotFound();
+                    return NotFound("Usuario no encontrado");
                 }
 
                 return Ok(usuario);
@@ -200,9 +204,31 @@ namespace ApiDonAppBle.Controllers
 
         [HttpPost("cambiopassword")]
         [Authorize]
-        public IActionResult cambiopassword([FromForm] Usuario usuarioLogueago)
+        public async Task<IActionResult> cambiopassword([FromForm] Usuario usuarioLogueago)
         {
+            var usuario = await _contexto.Usuario.FirstOrDefaultAsync(
+                u => u.Email == User.Identity.Name && u.IdUsuario == usuarioLogueago.IdUsuario);
+
+            if (usuario == null)
+            {
+                return BadRequest("Datos incorrectos");
+            }
+            if (!User.Identity.IsAuthenticated)
+            {
+                return BadRequest("No tienes permiso de estar aquí");
+            }
+
+            var hashed = Convert.ToBase64String(
+                KeyDerivation.Pbkdf2(
+                    password: usuarioLogueago.Password,
+                    salt: Encoding.ASCII.GetBytes(_config["Salt"]),
+                    prf: KeyDerivationPrf.HMACSHA1,
+                    iterationCount: 1000,
+                    numBytesRequested: 256 / 8
+                )
+            );
             return Ok();
         }
+
     }
 }

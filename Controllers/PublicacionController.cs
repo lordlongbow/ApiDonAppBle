@@ -39,12 +39,9 @@ public class PublicacionController : ControllerBase
     public Publicacion DetallesPublicacion(int id)
     {
 
-        var Publicacion = _context.Publicacion.Where(x => x.IdPublicacion == id).Include(x => x.IdUsuario).Include(x => x.IdComenatario).Include(x => x.IdEtiqueta).FirstOrDefault();
-
+        var Publicacion = _context.Publicacion.Where(x => x.IdPublicacion == id).FirstOrDefault();
         return Publicacion;
     }
-
-
 
     [HttpGet("MisPublicaciones")]
     [Authorize]
@@ -65,9 +62,6 @@ public class PublicacionController : ControllerBase
 
     }
 
-
-
-
     [HttpPost("cargarPublicacion")]
     [Authorize]
     public async Task<IActionResult> CargarPublicacion([FromForm] Publicacion publicacion)
@@ -86,7 +80,7 @@ public class PublicacionController : ControllerBase
             publicacion.IdUsuario = usuarioLogueado.IdUsuario;
             publicacion.Fecha = DateTime.Today;
             publicacion.Disponibilidad = true;
-            publicacion.Comentarios ??= new List<Comentario>();
+           // publicacion.Comentarios ??= new List<Comentario>();
             publicacion.Estado = publicacion.Estado != Estado.Publica ? Estado.Privada : publicacion.Estado;
             publicacion.Etiquetas ??= new List<Etiqueta>();
 
@@ -209,6 +203,25 @@ public class PublicacionController : ControllerBase
 
         return Ok(new { estado = publicacionEncontrada.Estado });
 
+    }
+
+
+    [HttpDelete("{id}")]
+    [Authorize]
+    public async Task<IActionResult> EliminarPublicacion(int id)
+    {
+        var publicacionEncontrada = await _context.Publicacion
+            .FirstOrDefaultAsync(p => p.IdPublicacion == id);   
+
+        if (publicacionEncontrada == null)
+        {
+            return NotFound("Publicacion no encontrada");
+        }
+
+        _context.Publicacion.Remove(publicacionEncontrada);
+        await _context.SaveChangesAsync();
+
+        return Ok("Publicacion eliminada");
     }
 
 

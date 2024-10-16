@@ -31,19 +31,18 @@ namespace ApiDonAppBle
         }
 
         //traer Comentarios de una publicacion en particular
-        [HttpGet]
+        [HttpGet("comentarios/{IdPublicacion}")]
         public IActionResult TraerComentarios(int IdPublicacion){
-            var publicacion = _contexto.Publicacion.Include(p=>p.Comentarios).FirstOrDefault(p=>p.IdPublicacion==IdPublicacion);
-
-            if(publicacion == null){
-                return NotFound("Publicacion no encontrada");
-            }
-            return Ok(publicacion.Comentarios);
+            
+            var comentarios = _contexto.Comentario
+                .Where(c => c.IdPublicacion == IdPublicacion)
+                .ToList();
+            return Ok(comentarios);
         }
         //crear Comentario
-        [HttpPost]
+        [HttpPost("comentar/{idPublicacion}")]
         [Authorize]
-        public IActionResult CrearComentario([FromBody] Comentario comentario){
+        public IActionResult CrearComentario(int IdPublicacion, [FromForm] Comentario comentario){
             var usuarioLogueado = _contexto.Usuario
                 .Where(u => u.Email == User.Identity.Name)
                 .FirstOrDefault();
@@ -53,14 +52,21 @@ namespace ApiDonAppBle
             }
 
             var publicacion = _contexto.Publicacion
-                .Where(p => p.IdPublicacion == comentario.IdPublicacion)
+                .Where(p => p.IdPublicacion == IdPublicacion)
                 .FirstOrDefault();
+
             if (publicacion == null)
             {
                 return NotFound("Publicacion no encontrada");
             }
             
-            publicacion.Comentarios.Add(comentario);
+            Comentario comentarios = new Comentario();
+            comentarios.Texto = comentario.Texto;
+            comentarios.IdPublicacion = publicacion.IdPublicacion;
+            comentarios.IdUsuario = usuarioLogueado.IdUsuario;
+            comentarios.Fecha = DateTime.Now;
+
+            _contexto.Comentario.Add(comentarios);
             _contexto.SaveChanges();
             return Ok(comentario);
         }
@@ -68,7 +74,7 @@ namespace ApiDonAppBle
         //Editar Comentario
         [HttpPut("{IdComenatario}")]
         [Authorize]
-        public IActionResult EditarComentario(int IdComenatario, [FromBody] Comentario comentario){
+        public IActionResult EditarComentario(int IdComenatario, [FromForm] Comentario comentario){
             var usuarioLogueado = _contexto.Usuario
                 .Where(u => u.Email == User.Identity.Name)
                 .FirstOrDefault();
@@ -77,23 +83,29 @@ namespace ApiDonAppBle
                 return BadRequest("No tienes credenciales para realizar esta accion");
             }
 
-            var publicacion = _contexto.Publicacion.Where(p => p.IdPublicacion == comentario.IdPublicacion).FirstOrDefault();
-            if (publicacion == null){
-                return NotFound("Publicacion no encontrada");
-            }
-            
-            var comentarioEditado = publicacion.Comentarios
+            var coment = _contexto.Comentario
                 .Where(c => c.IdComentario == IdComenatario)
                 .FirstOrDefault();
-            if (comentarioEditado == null){
-                return NotFound("No se encuentra el comentario");
+
+
+
+            if(coment == null)
+            {
+                return NotFound("Comentario no econtrado");
             }
-            comentarioEditado.Texto = comentario.Texto;
-            comentarioEditado.Fecha = DateTime.Now;
-            
-            _contexto.SaveChanges();
-            return Ok(comentarioEditado);
-        }
+            else if(coment.IdUsuario != usuarioLogueado.IdUsuario)
+            {
+                return BadRequest("No tienes credenciales para realizar esta accion");
+            }
+            else
+            {
+                coment.Texto = comentario.Texto;
+                coment.Fecha = DateTime.Now;
+                _contexto.SaveChanges();    
+            }
+            return Ok(comentario);
+            }
+        
         //Eliminar Comentario
         [HttpDelete("{IdComenatario}")]
         [Authorize]
@@ -106,24 +118,27 @@ namespace ApiDonAppBle
                 return BadRequest("No tienes credenciales para realizar esta accion");
             }
 
-            var publicacion = _contexto.Publicacion 
-                .Where(p => p.IdPublicacion == IdComenatario)
-                .FirstOrDefault();      
-
-            if (publicacion == null){       
-                return NotFound("Publicacion no encontrada");   
-            }
-
-            var comentario = publicacion.Comentarios.Where(c => c.IdComentario == IdComenatario).FirstOrDefault();
+            var comentario = _contexto.Comentario
+                .Where(c => c.IdComentario == IdComenatario)
+                .FirstOrDefault();
             if(comentario== null)
             {
                 return NotFound("Comentario no econtrado");
-            }  
+            }
+              else if(comentario.IdUsuario != usuarioLogueado.IdUsuario)
+            {
+                return BadRequest("No tienes credenciales para realizar esta accion");
+            }
+            else
+            {
 
-            publicacion.Comentarios.Remove(comentario);
+           _contexto.Comentario.Remove(comentario);
             _contexto.SaveChanges();
-            return Ok(comentario);
-        }
+            return Ok("Comentario borrado");
+    
+
+            }
+    }
         
     }
 }

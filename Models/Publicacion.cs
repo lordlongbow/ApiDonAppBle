@@ -34,7 +34,7 @@ namespace ApiDonAppBle.Models
         [Required]
         public bool Disponibilidad { get; set; }
 
-        // Puedes dejar esto opcional
+        
         public Usuario? Usuario { get; set; }
 
         [ForeignKey("Usuario")]
@@ -45,7 +45,6 @@ namespace ApiDonAppBle.Models
         [ForeignKey("IdComenatario")]
         public int IdComenatario { get; set; }
 
-        public ICollection<Comentario>? Comentarios { get; set; }
 
         [ForeignKey("IdEtiqueta")]
         public int IdEtiqueta { get; set; }

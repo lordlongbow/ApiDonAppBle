@@ -15,9 +15,11 @@ namespace ApiDonAppBle.Models
         [Required]
         public DateTime Fecha {get;set;}
        
-        [ForeignKey("IdPublicacion")]
+        public Publicacion? Publicacion {get;set;}
+        
+        [ForeignKey("Publicacion")]
         public int IdPublicacion {get;set;}
-        public Publicacion Publicacion {get;set;}
+       
 
         [ForeignKey("IdUsuario")]
         public int IdUsuario {get;set;}

@@ -18,10 +18,6 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
 
        
         modelBuilder.Entity<Publicacion>()
-            .HasMany(p => p.Comentarios)
-            .WithOne(c => c.Publicacion)
-            .HasForeignKey(c => c.IdPublicacion);
-        modelBuilder.Entity<Publicacion>()
             .HasMany(p => p.Etiquetas)
             .WithMany(e => e.Publicaciones)
             .UsingEntity(j => j.ToTable("PublicacionEtiqueta"));

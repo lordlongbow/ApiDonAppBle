@@ -6,7 +6,7 @@ namespace ApiDonAppBle.Models
 {
     public class Usuario 
     {
-        //id password email nombre apellido doreccion avatar
+        
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int IdUsuario {get;set;}
@@ -18,6 +18,6 @@ namespace ApiDonAppBle.Models
         public string Password {get;set;}
         public string? Direccion {get;set;}
         public string? Avatar {get;set;}
-      //  public ICollection<Publicacion>? Publicaciones {get;set;}
+
     }
 }

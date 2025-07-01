@@ -1,3 +1,4 @@
+
 using Microsoft.AspNetCore.Mvc;
 using ApiDonAppBle.Models;
 using Microsoft.EntityFrameworkCore;
@@ -32,23 +33,24 @@ namespace ApiDonAppBle.Controllers
 
         // Registro de usuario
         [HttpPost("Registrar")]
-        public IActionResult Registro([FromBody] Usuario User)
+        public IActionResult Registro([FromBody] Usuario user)
         {
             try
             {
                 var hashed = Convert.ToBase64String(
                     KeyDerivation.Pbkdf2(
-                        password: User.Password,
+                        password: user.Password,
                         salt: Encoding.ASCII.GetBytes(_config["Salt"]),
                         prf: KeyDerivationPrf.HMACSHA1,
                         iterationCount: 1000,
                         numBytesRequested: 256 / 8
                     )
                 );
-                User.Password = hashed;
-                _contexto.Add(User);
+                user.Password = hashed;
+                _contexto.Add(user);
                 _contexto.SaveChanges();
-                return Ok(User);
+
+                return Ok(new { mensaje = "Usuario registrado correctamente" });
             }
             catch (Exception ex)
             {
@@ -64,7 +66,7 @@ namespace ApiDonAppBle.Controllers
 
             if (usuario == null)
             {
-                return BadRequest("Credenciales Incorrectas");
+                return BadRequest("Credenciales incorrectas");
             }
 
             var hashed = Convert.ToBase64String(
@@ -83,75 +85,20 @@ namespace ApiDonAppBle.Controllers
             }
 
             var token = GenerarToken(usuario.Email);
-            return Ok(new { Token = token });
+
+            return Ok(new { token = token });
         }
 
-        // Obtener perfil del usuario autenticado
-        [HttpGet("miPerfil")]
-        [Authorize]
-        public IActionResult MiPerfil()
+        private string GenerarToken(string email)
         {
-            try
-            {
-                var email = User.Identity.Name;
-                var usuario = _contexto.Usuario.FirstOrDefault(u => u.Email == email);
-
-                if (!User.Identity.IsAuthenticated)
-                {
-                    return Unauthorized("Usted no tiene permisos para ingresar aqui");
-                }
-                if (usuario == null)
-                {
-                    return NotFound("Usuario no encontrado");
-                }
-
-                return Ok(usuario);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-
-        // Edita el perfil del usuario autenticado
-        [HttpPut("EditarPerfil")]
-        [Authorize]
-        public IActionResult EditarPerfil([FromBody] Usuario usuarioEditar)
-        {
-            try
-            {
-                var email = User.Identity.Name;
-                var usuario = _contexto.Usuario.FirstOrDefault(u => u.Email == email);
-
-                if (usuario == null)
-                {
-                    return NotFound();
-                }
-
-                usuario.Nombre = usuarioEditar.Nombre;
-                usuario.Apellido = usuarioEditar.Apellido;
-                usuario.Direccion = usuarioEditar.Direccion;
-
-                _contexto.Entry(usuario).State = EntityState.Modified;
-                _contexto.SaveChanges();
-
-                return Ok(usuario);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-
-        // Esta funcion genera el token y retornar un token
-        private string GenerarToken(string username)
-        {
-            var usuario = _contexto.Usuario.FirstOrDefault(u => u.Email == username);
+            var usuario = _contexto.Usuario.FirstOrDefault(u => u.Email == email);
+            if (usuario == null) return null;
 
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, usuario.Email),
-                new Claim("FullName", usuario.Nombre + " " + usuario.Apellido)
+                new Claim("FullName", $"{usuario.Nombre} {usuario.Apellido}"),
+                new Claim(ClaimTypes.NameIdentifier, usuario.IdUsuario.ToString())
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
@@ -160,74 +107,141 @@ namespace ApiDonAppBle.Controllers
                 issuer: _config["Jwt:Issuer"],
                 audience: _config["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.Now.AddMinutes(30000),
+                expires: DateTime.UtcNow.AddHours(3),
                 signingCredentials: credenciales
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        //Editar foto de Usuario
-        [HttpPut("actualizar/foto/{id}")]
+     
+        [HttpGet("miPerfil")]
         [Authorize]
-        public async Task<IActionResult> ActualizarFotoPerfil(int id, [FromForm] IFormFile foto)
+        public IActionResult MiPerfil()
         {
-            var usuarioLogueago = await _contexto.Usuario.FirstOrDefaultAsync(
-                u => u.Email == User.Identity.Name && u.IdUsuario == id
-            );
+            var email = User.Identity.Name;
+            var usuario = _contexto.Usuario.FirstOrDefault(u => u.Email == email);
 
-            if (usuarioLogueago == null)
+            if (!User.Identity.IsAuthenticated || usuario == null)
             {
-                return BadRequest("Datos incorrectos");
-            }
-            if (foto == null)
-            {
-                return BadRequest("Datos incorrectos");
+                return Unauthorized("No autorizado o usuario no encontrado");
             }
 
-            string wwwPath = _environment.WebRootPath;
-            string path = Path.Combine(wwwPath, "fotos", foto.FileName);
-
-            if (!Directory.Exists(path))
-            {
-                Directory.CreateDirectory(path);
-            }
-
-            string FileName =
-                "fotoperfil" + usuarioLogueago.IdUsuario + Path.GetExtension(foto.FileName);
-            string nombreFoto = Path.Combine(path, FileName);
-            usuarioLogueago.Avatar = Path.Combine("/fotos", nombreFoto);
-            _contexto.Usuario.Update(usuarioLogueago);
-            await _contexto.SaveChangesAsync();
-            return Ok(usuarioLogueago);
+            return Ok(usuario);
         }
 
-        [HttpPost("cambiopassword")]
+        // Editar perfil
+        [HttpPut("EditarPerfil")]
         [Authorize]
-        public async Task<IActionResult> cambiopassword([FromForm] Usuario usuarioLogueago)
+        public IActionResult EditarPerfil(
+     [FromForm(Name = "idUsuario")] int idUsuario,
+     [FromForm] string Nombre,
+     [FromForm] string Apellido,
+     [FromForm] string Direccion)
         {
-            var usuario = await _contexto.Usuario.FirstOrDefaultAsync(
-                u => u.Email == User.Identity.Name && u.IdUsuario == usuarioLogueago.IdUsuario);
+            int IdUsuario = idUsuario;
+
+            var email = User.Identity.Name;
+            var usuario = _contexto.Usuario.FirstOrDefault(u => u.Email == email && u.IdUsuario == IdUsuario);
+
+           
+
+
+            if (!User.Identity.IsAuthenticated)
+            {
+                return Unauthorized("No autorizado");
+            }
+
+
 
             if (usuario == null)
             {
-                return BadRequest("Datos incorrectos");
+                return NotFound("Usuario no encontrado");
             }
-            if (!User.Identity.IsAuthenticated)
+
+
+           
+
+            usuario.Nombre = Nombre;
+            usuario.Apellido = Apellido;
+            usuario.Direccion = Direccion;
+
+            _contexto.Entry(usuario).State = EntityState.Modified;
+            _contexto.SaveChanges();
+
+    
+            return Ok(usuario);
+        }
+
+       
+        [HttpPost("cambiopassword")]
+        [Authorize]
+        public async Task<IActionResult> CambioPassword([FromForm] Usuario usuarioEntrada)
+        {
+            var usuario = await _contexto.Usuario
+                .FirstOrDefaultAsync(u => u.Email == User.Identity.Name && u.IdUsuario == usuarioEntrada.IdUsuario);
+
+            if (usuario == null || !User.Identity.IsAuthenticated)
             {
-                return BadRequest("No tienes permiso de estar aquí");
+                return BadRequest("No autorizado o datos inválidos");
             }
 
             var hashed = Convert.ToBase64String(
                 KeyDerivation.Pbkdf2(
-                    password: usuarioLogueago.Password,
+                    password: usuarioEntrada.Password,
                     salt: Encoding.ASCII.GetBytes(_config["Salt"]),
                     prf: KeyDerivationPrf.HMACSHA1,
                     iterationCount: 1000,
                     numBytesRequested: 256 / 8
                 )
             );
-            return Ok();
+
+            usuario.Password = hashed;
+            await _contexto.SaveChangesAsync();
+            return Ok("Contraseña actualizada");
+        }
+
+        // Actualizar foto de perfil
+        [HttpPut("actualizar/foto/{id}")]
+        [Authorize]
+        public async Task<IActionResult> ActualizarFotoPerfil(int id, [FromForm] IFormFile foto)
+        {
+
+            
+
+            var usuario = await _contexto.Usuario.FirstOrDefaultAsync(
+                u => u.Email == User.Identity.Name && u.IdUsuario == id
+            );
+
+            if (usuario == null || foto == null)
+            {
+                return BadRequest("Datos inválidos");
+            }
+
+            string wwwPath = _environment.WebRootPath;
+            string fotosDir = Path.Combine(wwwPath, "fotos");
+
+            if (!Directory.Exists(fotosDir))
+            {
+                Directory.CreateDirectory(fotosDir);
+            }
+
+            string fileName = $"fotoperfil{usuario.IdUsuario}{Path.GetExtension(foto.FileName)}";
+            string fullPath = Path.Combine(fotosDir, fileName);
+
+
+            using (var stream = new FileStream(fullPath, FileMode.Create))
+            {
+                await foto.CopyToAsync(stream);
+            }
+
+            usuario.Avatar = Path.Combine("/fotos", fileName);
+            _contexto.Usuario.Update(usuario);
+
+            await _contexto.SaveChangesAsync();
+
+
+            return Ok(usuario);
         }
 
     }

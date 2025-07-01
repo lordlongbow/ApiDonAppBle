@@ -12,8 +12,6 @@ namespace ApiDonAppBle.Models
         [Required]
         public string Descripcion {get;set;}
 
-        
-        public List<Publicacion> Publicaciones {get;set;}
        
     }
 }

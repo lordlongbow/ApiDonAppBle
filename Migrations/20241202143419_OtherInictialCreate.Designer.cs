@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ApiDonAppBle.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20240828234045_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20241202143419_OtherInictialCreate")]
+    partial class OtherInictialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -82,7 +82,6 @@ namespace ApiDonAppBle.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("FotoPublicacion")
-                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<int>("IdComenatario")
@@ -99,7 +98,6 @@ namespace ApiDonAppBle.Migrations
                         .HasColumnType("longtext");
 
                     b.Property<string>("VideoPublicacion")
-                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.HasKey("IdPublicacion");
@@ -142,25 +140,10 @@ namespace ApiDonAppBle.Migrations
                     b.ToTable("Usuario");
                 });
 
-            modelBuilder.Entity("EtiquetaPublicacion", b =>
-                {
-                    b.Property<int>("EtiquetasIdEtiqueta")
-                        .HasColumnType("int");
-
-                    b.Property<int>("PublicacionesIdPublicacion")
-                        .HasColumnType("int");
-
-                    b.HasKey("EtiquetasIdEtiqueta", "PublicacionesIdPublicacion");
-
-                    b.HasIndex("PublicacionesIdPublicacion");
-
-                    b.ToTable("PublicacionEtiqueta", (string)null);
-                });
-
             modelBuilder.Entity("ApiDonAppBle.Models.Comentario", b =>
                 {
                     b.HasOne("ApiDonAppBle.Models.Publicacion", "Publicacion")
-                        .WithMany("Comentarios")
+                        .WithMany()
                         .HasForeignKey("IdPublicacion")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -171,37 +154,12 @@ namespace ApiDonAppBle.Migrations
             modelBuilder.Entity("ApiDonAppBle.Models.Publicacion", b =>
                 {
                     b.HasOne("ApiDonAppBle.Models.Usuario", "Usuario")
-                        .WithMany("Publicaciones")
+                        .WithMany()
                         .HasForeignKey("IdUsuario")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Usuario");
-                });
-
-            modelBuilder.Entity("EtiquetaPublicacion", b =>
-                {
-                    b.HasOne("ApiDonAppBle.Models.Etiqueta", null)
-                        .WithMany()
-                        .HasForeignKey("EtiquetasIdEtiqueta")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("ApiDonAppBle.Models.Publicacion", null)
-                        .WithMany()
-                        .HasForeignKey("PublicacionesIdPublicacion")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("ApiDonAppBle.Models.Publicacion", b =>
-                {
-                    b.Navigation("Comentarios");
-                });
-
-            modelBuilder.Entity("ApiDonAppBle.Models.Usuario", b =>
-                {
-                    b.Navigation("Publicaciones");
                 });
 #pragma warning restore 612, 618
         }

@@ -31,114 +31,135 @@ namespace ApiDonAppBle
         }
 
         //traer Comentarios de una publicacion en particular
+
         [HttpGet("comentarios/{IdPublicacion}")]
-        public IActionResult TraerComentarios(int IdPublicacion){
-            
+        public IActionResult TraerComentarios(int IdPublicacion)
+        {
             var comentarios = _contexto.Comentario
                 .Where(c => c.IdPublicacion == IdPublicacion)
+                .Include(c => c.Usuario)
+                .OrderByDescending(c => c.Fecha)
+                .Select(c => new ComentarioDTO
+                {
+                    IdComentario = c.IdComentario,
+                    Texto = c.Texto,
+                    Fecha = c.Fecha,
+                    NombreUsuario = c.Usuario.Nombre + " " + c.Usuario.Apellido,
+                    IdUsuario = c.Usuario.IdUsuario
+                })
                 .ToList();
+
+
             return Ok(comentarios);
         }
-        //crear Comentario
+
+
+
         [HttpPost("comentar/{idPublicacion}")]
         [Authorize]
-        public IActionResult CrearComentario(int IdPublicacion, [FromForm] Comentario comentario){
-            var usuarioLogueado = _contexto.Usuario
-                .Where(u => u.Email == User.Identity.Name)
-                .FirstOrDefault();
+        public async Task<IActionResult> CrearComentario(int idPublicacion, [FromForm] string texto)
+        {
+            var usuarioLogueado = await _contexto.Usuario
+                .FirstOrDefaultAsync(u => u.Email == User.Identity.Name);
+
             if (usuarioLogueado == null || !User.Identity.IsAuthenticated)
-            {   
-                return BadRequest("No tienes credenciales para realizar esta accion");
+            {
+                return Unauthorized("No tienes credenciales para realizar esta acción");
             }
 
-            var publicacion = _contexto.Publicacion
-                .Where(p => p.IdPublicacion == IdPublicacion)
-                .FirstOrDefault();
+            var publicacion = await _contexto.Publicacion
+                .FirstOrDefaultAsync(p => p.IdPublicacion == idPublicacion);
 
             if (publicacion == null)
             {
-                return NotFound("Publicacion no encontrada");
+                return NotFound("Publicación no encontrada");
             }
-            
-            Comentario comentarios = new Comentario();
-            comentarios.Texto = comentario.Texto;
-            comentarios.IdPublicacion = publicacion.IdPublicacion;
-            comentarios.IdUsuario = usuarioLogueado.IdUsuario;
-            comentarios.Fecha = DateTime.Now;
 
-            _contexto.Comentario.Add(comentarios);
-            _contexto.SaveChanges();
+            var comentario = new Comentario
+            {
+                Texto = texto,
+                Fecha = DateTime.Now,
+                IdPublicacion = publicacion.IdPublicacion,
+                IdUsuario = usuarioLogueado.IdUsuario
+            };
+
+            _contexto.Comentario.Add(comentario);
+            await _contexto.SaveChangesAsync();
+
+
+            comentario.Usuario = usuarioLogueado;
+
+
+
             return Ok(comentario);
         }
 
-        //Editar Comentario
-        [HttpPut("{IdComenatario}")]
+        [HttpPut("editar/{IdComentario}")]
         [Authorize]
-        public IActionResult EditarComentario(int IdComenatario, [FromForm] Comentario comentario){
+        public IActionResult EditarComentario(int IdComentario, [FromForm] string Texto)
+        {
             var usuarioLogueado = _contexto.Usuario
                 .Where(u => u.Email == User.Identity.Name)
                 .FirstOrDefault();
+
             if (usuarioLogueado == null || !User.Identity.IsAuthenticated)
-            {   
-                return BadRequest("No tienes credenciales para realizar esta accion");
-            }
+                return BadRequest("No tienes credenciales");
 
             var coment = _contexto.Comentario
-                .Where(c => c.IdComentario == IdComenatario)
-                .FirstOrDefault();
+                .FirstOrDefault(c => c.IdComentario == IdComentario);
+
+            if (coment == null)
+                return NotFound("Comentario no encontrado");
+
+            if (coment.IdUsuario != usuarioLogueado.IdUsuario)
+                return BadRequest("No tienes permiso para modificar este comentario");
+
+            coment.Texto = Texto;
+            coment.Fecha = DateTime.Now;
+
+            _contexto.SaveChanges();
+
+            return Ok(new ComentarioDTO
+            {
+                IdComentario = coment.IdComentario,
+                Texto = coment.Texto,
+                Fecha = coment.Fecha,
+                NombreUsuario = usuarioLogueado.Nombre + " " + usuarioLogueado.Apellido,
+                IdUsuario = coment.IdUsuario
+            });
+        }
 
 
-
-            if(coment == null)
-            {
-                return NotFound("Comentario no econtrado");
-            }
-            else if(coment.IdUsuario != usuarioLogueado.IdUsuario)
-            {
-                return BadRequest("No tienes credenciales para realizar esta accion");
-            }
-            else
-            {
-                coment.Texto = comentario.Texto;
-                coment.Fecha = DateTime.Now;
-                _contexto.SaveChanges();    
-            }
-            return Ok(comentario);
-            }
-        
-        //Eliminar Comentario
-        [HttpDelete("{IdComenatario}")]
+        [HttpDelete("{IdComentario}")]
         [Authorize]
-        public IActionResult BorrarComentario(int IdComenatario){
+        public IActionResult BorrarComentario(int IdComentario)
+        {
             var usuarioLogueado = _contexto.Usuario
                 .Where(u => u.Email == User.Identity.Name)
                 .FirstOrDefault();
             if (usuarioLogueado == null || !User.Identity.IsAuthenticated)
-            {   
-                return BadRequest("No tienes credenciales para realizar esta accion");
+            {
+                return BadRequest("No tienes credenciales para realizar esta acción");
             }
 
             var comentario = _contexto.Comentario
-                .Where(c => c.IdComentario == IdComenatario)
+                .Where(c => c.IdComentario == IdComentario)
                 .FirstOrDefault();
-            if(comentario== null)
+
+            if (comentario == null)
             {
-                return NotFound("Comentario no econtrado");
+                return NotFound("Comentario no encontrado");
             }
-              else if(comentario.IdUsuario != usuarioLogueado.IdUsuario)
+            else if (comentario.IdUsuario != usuarioLogueado.IdUsuario)
             {
-                return BadRequest("No tienes credenciales para realizar esta accion");
+                return BadRequest("No tienes permiso para eliminar este comentario");
             }
             else
             {
-
-           _contexto.Comentario.Remove(comentario);
-            _contexto.SaveChanges();
-            return Ok("Comentario borrado");
-    
-
+                _contexto.Comentario.Remove(comentario);
+                _contexto.SaveChanges();
+                return Ok("Comentario borrado");
             }
-    }
-        
+        }
     }
 }

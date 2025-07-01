@@ -19,14 +19,15 @@ namespace ApiDonAppBle.Models
 
         [Required]
         public string Titulo { get; set; }
+        public string Descripcion { get; set; }
 
         [Required]
         public DateTime Fecha { get; set; }
 
-        // El estado será público por defecto
+        [Column(TypeName = "VARCHAR(50)")]
         public Estado Estado { get; set; } = Estado.Publica;
 
-        [NotMapped] //esto es para que no se inserte en la base de datos y quede en el servidor
+        [NotMapped]
         public IFormFile? FotoPublicacionIFormFile { get; set; }
         public string? FotoPublicacion { get; set; }
         public string? VideoPublicacion { get; set; }
@@ -34,22 +35,25 @@ namespace ApiDonAppBle.Models
         [Required]
         public bool Disponibilidad { get; set; }
 
-        
+
+        [ForeignKey("IdUsuario")]
         public Usuario? Usuario { get; set; }
 
-        [ForeignKey("Usuario")]
         public int IdUsuario { get; set; }
 
+
+        [Column(TypeName = "VARCHAR(250)")]
         public CategoriaEnum Categoria { get; set; }
 
+
         [ForeignKey("IdComenatario")]
-        public int IdComenatario { get; set; }
+        public int? IdComenatario { get; set; }
 
 
         [ForeignKey("IdEtiqueta")]
-        public int IdEtiqueta { get; set; }
+        public int? IdEtiqueta { get; set; }
 
-        public ICollection<Etiqueta>? Etiquetas { get; set; }
+
     }
 
 

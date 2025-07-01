@@ -20,105 +20,146 @@ public class PublicacionController : ControllerBase
     }
 
     [HttpGet]
-    public ActionResult<IEnumerable<Publicacion>> GetPublicaciones()
+    public IActionResult GetPublicaciones()
     {
+        var publicaciones = _context.Publicacion
+            .Include(p => p.Usuario)
+            .Where(p => p.Disponibilidad == true)
+            .OrderByDescending(p => p.Fecha)
+            .Select(p => new PublicacionDTO
+            {
+                IdPublicacion = p.IdPublicacion,
+                Titulo = p.Titulo,
+                Descripcion = p.Descripcion,
+                Fecha = p.Fecha,
+                FotoPublicacion = p.FotoPublicacion,
+                Disponibilidad = p.Disponibilidad,
+                Categoria = p.Categoria.ToString(),
+                Usuario = new UsuarioDTO
+                {
+                    Nombre = p.Usuario.Nombre,
+                    Apellido = p.Usuario.Apellido
+                }
+            })
+            .ToList();
 
-        var publicaciones = _context.Publicacion.ToList();
-
-        if (publicaciones.Count != 0)
-        {
-            return Ok(publicaciones);
-        }
-        else
-        {
-            return NotFound("Aun no cargas Publicacaiones");
-        }
+        return Ok(publicaciones);
     }
+
+
 
     [HttpGet("{id}")]
-    public Publicacion DetallesPublicacion(int id)
+    public ActionResult<PublicacionDTO> DetallesPublicacion(int id)
     {
+        var publicacion = _context.Publicacion
+            .Include(p => p.Usuario)
+            .FirstOrDefault(p => p.IdPublicacion == id);
 
-        var Publicacion = _context.Publicacion.Where(x => x.IdPublicacion == id).FirstOrDefault();
-        return Publicacion;
+        if (publicacion == null)
+            return NotFound();
+
+        var publicaionView = new PublicacionDTO
+        {
+            IdPublicacion = publicacion.IdPublicacion,
+            Titulo = publicacion.Titulo,
+            Descripcion = publicacion.Descripcion,
+            Fecha = publicacion.Fecha,
+            FotoPublicacion = publicacion.FotoPublicacion,
+            Disponibilidad = publicacion.Disponibilidad,
+            Categoria = publicacion.Categoria.ToString(),
+            IdUsuario = publicacion.Usuario.IdUsuario,
+            Usuario = new UsuarioDTO
+            {
+
+                Nombre = publicacion.Usuario?.Nombre,
+                Apellido = publicacion.Usuario?.Apellido
+            }
+        };
+
+        return Ok(publicaionView);
     }
+
 
     [HttpGet("MisPublicaciones")]
     [Authorize]
-    public IActionResult misPublicaciones()
+    public IActionResult MisPublicaciones()
     {
+        var usuario = _context.Usuario.FirstOrDefault(x => x.Email == User.Identity.Name);
 
-        var usuario = _context.Usuario.Where(x => x.Email == User.Identity.Name).FirstOrDefault();
-
-        var misPublicaciones = _context.Publicacion.Where(x => x.IdUsuario == usuario.IdUsuario).ToList();
-        if (misPublicaciones.Count != 0)
+        if (usuario == null)
         {
-            return Ok(misPublicaciones);
-        }
-        else
-        {
-            return NotFound("Aun no cargas Publicacaiones");
+            return Unauthorized();
         }
 
+        var misPublicaciones = _context.Publicacion
+            .Where(x => x.IdUsuario == usuario.IdUsuario)
+            .Include(p => p.Usuario)
+            .Select(p => new PublicacionDTO
+            {
+                IdPublicacion = p.IdPublicacion,
+                Titulo = p.Titulo,
+                Descripcion = p.Descripcion,
+                Fecha = p.Fecha,
+                FotoPublicacion = p.FotoPublicacion,
+                Disponibilidad = p.Disponibilidad,
+                Categoria = p.Categoria.ToString(),
+                Usuario = new UsuarioDTO
+                {
+                    Nombre = p.Usuario.Nombre,
+                    Apellido = p.Usuario.Apellido
+                }
+            })
+            .ToList();
+
+        return Ok(misPublicaciones);
     }
 
-    [HttpPost("cargarPublicacion")]
+
     [Authorize]
-    public async Task<IActionResult> CargarPublicacion([FromForm] Publicacion publicacion)
+    [HttpPost("cargarPublicacion")]
+    public async Task<IActionResult> CargarPublicacion(
+        [FromForm] string titulo,
+        [FromForm] string descripcion,
+        [FromForm] string categoria,
+        [FromForm] IFormFile fotoPublicacion)
     {
-        // Obtén el usuario autenticado
         var usuarioLogueado = _context.Usuario.FirstOrDefault(x => x.Email == User.Identity.Name);
 
         if (usuarioLogueado == null)
-        {
             return Unauthorized("Usuario no autorizado.");
-        }
 
         try
         {
-            // Cargar los datos del formulario
-            publicacion.IdUsuario = usuarioLogueado.IdUsuario;
-            publicacion.Fecha = DateTime.Today;
-            publicacion.Disponibilidad = true;
-           // publicacion.Comentarios ??= new List<Comentario>();
-            publicacion.Estado = publicacion.Estado != Estado.Publica ? Estado.Privada : publicacion.Estado;
-            publicacion.Etiquetas ??= new List<Etiqueta>();
+            var publicacion = new Publicacion
+            {
+                IdUsuario = usuarioLogueado.IdUsuario,
+                Titulo = titulo,
+                Descripcion = descripcion,
+                Fecha = DateTime.Today,
+                Disponibilidad = true,
+                Estado = Estado.Publica,
+                Categoria = Enum.Parse<CategoriaEnum>(categoria)
+            };
 
-            // Procesar foto
-            if (publicacion.FotoPublicacionIFormFile != null)
+            if (fotoPublicacion != null)
             {
                 string wwwPath = _environment.WebRootPath;
-                string path = Path.Combine(wwwPath, "Uploads");
-                Console.WriteLine(path);
+                string uploadsPath = Path.Combine(wwwPath, "Uploads");
 
-                try
+                if (!Directory.Exists(uploadsPath))
+                    Directory.CreateDirectory(uploadsPath);
+
+                string fileName = $"fotoPublicacion_{Guid.NewGuid():N}_{usuarioLogueado.IdUsuario}{Path.GetExtension(fotoPublicacion.FileName)}";
+                string fullPath = Path.Combine(uploadsPath, fileName);
+
+                using (var stream = new FileStream(fullPath, FileMode.Create))
                 {
-                    if (!Directory.Exists(path))
-                    {
-                        Directory.CreateDirectory(path);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    return BadRequest(new { messagess = $"Error al crear la carpeta: {ex.Message}" });
+                    await fotoPublicacion.CopyToAsync(stream);
                 }
 
-                string fileName = $"fotoPublicacion_{Guid.NewGuid().ToString("N")}{usuarioLogueado.IdUsuario}{Path.GetExtension(publicacion.FotoPublicacionIFormFile.FileName)}";
-                string pathCompleto = Path.Combine(path, fileName);
-
-                using (var stream = new FileStream(pathCompleto, FileMode.Create))
-                {
-                    await publicacion.FotoPublicacionIFormFile.CopyToAsync(stream);
-                }
-
-                publicacion.FotoPublicacion = Path.Combine("/Uploads", fileName);
-            }
-            else
-            {
-                publicacion.FotoPublicacion = null;
+                publicacion.FotoPublicacion = Path.Combine("Uploads", fileName);
             }
 
-            // Guardar la publicación
             await _context.Publicacion.AddAsync(publicacion);
             await _context.SaveChangesAsync();
 
@@ -126,56 +167,80 @@ public class PublicacionController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(new { messagerr = ex.Message });
+            return StatusCode(500, new { mensaje = ex.Message });
         }
     }
 
 
-    [HttpPut("editarPublicacion/{id}")]
     [Authorize]
-    public async Task<IActionResult> EditarPublicacion(int id, [FromForm] Publicacion publicacion)
+    [HttpPut("editarPublicacion/{id}")]
+    public async Task<IActionResult> EditarPublicacion(
+        int id,
+        [FromForm] string titulo,
+        [FromForm] string descripcion,
+        [FromForm] string disponibilidad,
+        [FromForm] string categoria,
+        [FromForm] IFormFile? FotoPublicacionIFormFile)
     {
-        var publicacionEncontrada = await _context.Publicacion
-            .FirstOrDefaultAsync(p => p.IdPublicacion == id);
+        var usuarioLogueado = _context.Usuario.FirstOrDefault(x => x.Email == User.Identity.Name);
 
-        if (publicacionEncontrada == null)
-        {
-            return NotFound("Publicacion no encontrada");
-        }
+        if (usuarioLogueado == null)
+            return Unauthorized("Usuario no autorizado.");
 
-        if (publicacion.Titulo == null)
+        var publicacion = await _context.Publicacion.FindAsync(id);
+        if (publicacion == null)
+            return NotFound("Publicación no encontrada.");
+
+        if (publicacion.IdUsuario != usuarioLogueado.IdUsuario)
+            return BadRequest("No puedes editar esta publicación.");
+
+        try
         {
-            publicacionEncontrada.Titulo = publicacionEncontrada.Titulo;
-        }
-        else
-        {
-            publicacionEncontrada.Titulo = publicacion.Titulo;
-        }
-        if (publicacion.FotoPublicacionIFormFile != null)
-        {
-            string wwwPath = _environment.WebRootPath;
-            string path = Path.Combine(wwwPath, "Uploads");
-            Console.WriteLine(path);
-        }
-        else
-        {
-            publicacionEncontrada.FotoPublicacion = publicacion.FotoPublicacion;
-        }
-        if (publicacion.Disponibilidad == null)
-        {
-            publicacionEncontrada.Disponibilidad = publicacion.Disponibilidad;
-        }
-        else
-        {
-            publicacionEncontrada.Disponibilidad = publicacionEncontrada.Disponibilidad;
-        }
+            publicacion.Titulo = titulo;
+            publicacion.Descripcion = descripcion;
+            publicacion.Disponibilidad = bool.Parse(disponibilidad);
+            publicacion.Categoria = Enum.Parse<CategoriaEnum>(categoria);
+
+            if (FotoPublicacionIFormFile != null)
+            {
+                string wwwPath = _environment.WebRootPath;
+                string uploadsPath = Path.Combine(wwwPath, "Uploads");
+
+                if (!Directory.Exists(uploadsPath))
+                    Directory.CreateDirectory(uploadsPath);
+
+                string fileName = $"fotoPublicacion_{Guid.NewGuid():N}_{usuarioLogueado.IdUsuario}{Path.GetExtension(FotoPublicacionIFormFile.FileName)}";
+                string fullPath = Path.Combine(uploadsPath, fileName);
+
+                using (var stream = new FileStream(fullPath, FileMode.Create))
+                {
+                    await FotoPublicacionIFormFile.CopyToAsync(stream);
+                }
+
+                publicacion.FotoPublicacion = Path.Combine("Uploads", fileName);
+            }
+
+            await _context.SaveChangesAsync();
 
 
-        _context.Publicacion.Update(publicacionEncontrada);
-        await _context.SaveChangesAsync();
+            return Ok(new
+            {
+                id = publicacion.IdPublicacion,
+                titulo = publicacion.Titulo,
+                descripcion = publicacion.Descripcion,
+                fotoPublicacion = publicacion.FotoPublicacion,
+                disponibilidad = publicacion.Disponibilidad,
+                categoria = publicacion.Categoria
+            });
 
-        return Ok(publicacionEncontrada);
+
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { mensaje = "Error interno: " + ex.Message });
+        }
     }
+
 
     [HttpPut("cambioEstadoPublicacion/{id}")]
     [Authorize]
@@ -210,18 +275,26 @@ public class PublicacionController : ControllerBase
     [Authorize]
     public async Task<IActionResult> EliminarPublicacion(int id)
     {
+        var usuario = await _context.Usuario
+            .FirstOrDefaultAsync(u => u.Email == User.Identity.Name);
+
+        if (usuario == null)
+        {
+            return Unauthorized("Usuario no válido");
+        }
+
         var publicacionEncontrada = await _context.Publicacion
-            .FirstOrDefaultAsync(p => p.IdPublicacion == id);   
+            .FirstOrDefaultAsync(p => p.IdPublicacion == id && p.IdUsuario == usuario.IdUsuario);
 
         if (publicacionEncontrada == null)
         {
-            return NotFound("Publicacion no encontrada");
+            return NotFound("Publicación no encontrada o no pertenece al usuario actual");
         }
 
         _context.Publicacion.Remove(publicacionEncontrada);
         await _context.SaveChangesAsync();
 
-        return Ok("Publicacion eliminada");
+        return Ok(new { mensaje = "Publicación eliminada correctamente" });
     }
 
 
